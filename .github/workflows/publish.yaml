@@ -1,0 +1,52 @@
+name: Publish Python Package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # 3️⃣ Install uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      # 4️⃣ Clean old build artifacts
+      - name: Remove old build artifacts
+        run: |
+          rm -rf dist/
+          rm -rf build/
+          rm -rf *.egg-info/
+
+      # 5️⃣ Install build dependencies
+      - name: Install build deps
+        run: |
+          uv venv
+          . .venv/bin/activate
+          uv pip install --upgrade build twine
+
+      # 6️⃣ Build package (wheel + sdist)
+      - name: Build package
+        run: |
+          . .venv/bin/activate
+          uv build
+
+      # 7️⃣ Publish to PyPI
+      - name: Upload to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          . .venv/bin/activate
+          uv run twine upload dist/* --verbose
